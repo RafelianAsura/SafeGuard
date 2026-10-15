@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeGuard | Settings</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/audio.css">
+  <link rel="stylesheet" href="/hardening.css">
+  <link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main><header class="topbar" id="topbar"></header><div class="page">
+    <div class="offline-warning connection-warning" id="connection-warning" role="status" hidden></div>
+    <section class="panel settings-panel"><div class="panel-heading"><div><p class="eyebrow">SYSTEM CONFIGURATION</p><h3>Alert thresholds</h3></div><button class="primary-button" id="save-settings" type="submit" form="settings-form">Save settings</button></div>
+      <form id="settings-form"><div class="settings-form"><label>Vibration dinamis (g)<input id="setting-vibration" name="vibration" type="number" step="0.01" min="0.001" required></label><label>Smoke (ppm/skala)<input id="setting-smoke" name="smoke" type="number" min="0.001" required></label><label>Temperature (°C)<input id="setting-temperature" name="temperature" type="number" min="0.001" required></label><label>Gas (ppm/skala)<input id="setting-gas" name="gas" type="number" min="0.001" required></label><label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Jika diaktifkan di server"></label></div></form>
+      <p class="form-note" id="settings-note">Ambang getaran 0.15 g hanya nilai awal dan wajib dikalibrasi. Nilai smoke/gas juga bergantung kalibrasi modul.</p>
+    </section>
+  </div></main>
+  <script src="/shared.js"></script>
+  <script src="/settings.js"></script>
+</body>
+</html>

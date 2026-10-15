@@ -1,0 +1,6 @@
+.connection-warning{margin:0 0 20px}
+.history-filters{display:flex;flex-wrap:wrap;align-items:end;gap:14px;margin:0 0 18px}
+.history-filters label{display:flex;align-items:center;gap:8px;color:#879591;font-size:10px}
+.history-filters select,.history-filters input{max-width:190px;padding:7px 9px;border:1px solid #d9e3df;border-radius:6px;background:#fff;color:#42555a;font:600 11px 'Segoe UI',system-ui,sans-serif}
+#load-more{margin-top:18px}
+@media(max-width:700px){.history-filters{align-items:stretch;flex-direction:column}.history-filters label{justify-content:space-between}.history-filters select,.history-filters input{max-width:none;flex:1}}

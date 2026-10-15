@@ -2,7 +2,6 @@ node_modules/
 .env
 .env.*
 !.env.example
-safeguard.db
-safeguard.db-shm
-safeguard.db-wal
+safeguard.db*
 public/vendor/chart.js/
+firmware/safeguard_esp32/config.h

@@ -56,6 +56,10 @@ async function cleanupOldData() {
 app.use(express.json({ limit: '10kb' }));
 app.use('/vendor/chart.js', express.static(path.join(__dirname, 'node_modules/chart.js/dist')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get(['/live-monitoring', '/rooms', '/history', '/alerts', '/settings'], (req, res) => {
+  const page = req.path.slice(1);
+  res.sendFile(path.join(__dirname, 'public', `${page}.html`));
+});
 
 if (!API_KEY) console.warn('WARNING: SAFEGUARD_API_KEY is not set; write API endpoints are unauthenticated.');
 
@@ -181,7 +185,10 @@ app.use('/api', (req, res, next) => {
   dbReady.then(async () => {
     if (Date.now() - lastCleanupAt >= CLEANUP_INTERVAL_MS) await cleanupOldData();
     next();
-  }).catch(next);
+  }).catch(error => {
+    if (req.path === '/health') return res.status(503).json({ ok: false });
+    next(error);
+  });
 });
 
 async function addReading(payload, createAlerts = true, source = 'esp32') {
@@ -262,7 +269,11 @@ function asyncHandler(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'SafeGuard API' }));
+app.get('/api/health', asyncHandler(async (_req, res) => {
+  await dbReady;
+  await execute('SELECT 1');
+  res.json({ ok: true, service: 'SafeGuard API' });
+}));
 
 app.get('/api/dashboard', asyncHandler(async (_req, res) => {
   const settings = await getSettings();
@@ -293,9 +304,10 @@ app.get('/api/dashboard', asyncHandler(async (_req, res) => {
   const status = !rooms.length ? 'OFFLINE' : sensorStatus === 'NORMAL' && offlineRooms.length ? 'WARNING' : sensorStatus;
   const demoRooms = onlineRooms;
   const demoMode = demoRooms.length > 0 && demoRooms.every(room => room.source === 'demo');
+  const alertCount = Number((await get('SELECT COUNT(*) AS count FROM alerts')).count);
   res.json({
     status, sensorStatus, offlineRooms, offlineThresholdSeconds: OFFLINE_SECONDS,
-    demoMode, latest, settings, rooms, alerts: await all('SELECT * FROM alerts ORDER BY id DESC LIMIT 6')
+    demoMode, latest, settings, rooms, alertCount, alerts: await all('SELECT * FROM alerts ORDER BY id DESC LIMIT 6')
   });
 }));
 
@@ -306,9 +318,32 @@ app.get('/api/readings', asyncHandler(async (req, res) => {
   if (req.query.room !== undefined && (typeof req.query.room !== 'string' || req.query.room.length > 40)) {
     return res.status(400).json({ error: 'room filter maksimal 40 karakter.' });
   }
-  const readings = req.query.room
-    ? await all('SELECT * FROM readings WHERE room = ? ORDER BY id DESC LIMIT ?', [req.query.room, limit])
-    : await all('SELECT * FROM readings ORDER BY id DESC LIMIT ?', [limit]);
+  const dateFilters = [];
+  for (const key of ['from', 'to']) {
+    if (req.query[key] !== undefined) {
+      const date = req.query[key];
+      const parsedDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? new Date(`${date}T00:00:00Z`)
+        : null;
+      if (!parsedDate || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
+        return res.status(400).json({ error: `${key} harus berupa tanggal YYYY-MM-DD yang valid.` });
+      }
+      dateFilters.push([key, date]);
+    }
+  }
+  const clauses = [];
+  const args = [];
+  if (req.query.room) {
+    clauses.push('room = ?');
+    args.push(req.query.room);
+  }
+  for (const [key, value] of dateFilters) {
+    clauses.push(key === 'from' ? 'date(timestamp) >= date(?)' : 'date(timestamp) <= date(?)');
+    args.push(value);
+  }
+  const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
+  args.push(limit);
+  const readings = await all(`SELECT * FROM readings${where} ORDER BY id DESC LIMIT ?`, args);
   res.json(readings.reverse());
 }));
 
@@ -316,7 +351,9 @@ app.get('/api/alerts', asyncHandler(async (req, res) => {
   const requestedLimit = req.query.limit === undefined ? 100 : Number(req.query.limit);
   if (!Number.isInteger(requestedLimit) || requestedLimit < 1) return res.status(400).json({ error: 'limit harus integer antara 1 dan 500.' });
   const limit = Math.min(requestedLimit, 500);
-  res.json(await all('SELECT * FROM alerts ORDER BY id DESC LIMIT ?', [limit]));
+  const requestedOffset = req.query.offset === undefined ? 0 : Number(req.query.offset);
+  if (!Number.isInteger(requestedOffset) || requestedOffset < 0) return res.status(400).json({ error: 'offset harus berupa integer nol atau lebih.' });
+  res.json(await all('SELECT * FROM alerts ORDER BY id DESC LIMIT ? OFFSET ?', [limit, requestedOffset]));
 }));
 
 app.get('/api/settings', asyncHandler(async (_req, res) => res.json(await getSettings())));

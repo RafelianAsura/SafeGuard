@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeGuard | Live Monitoring</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/audio.css">
+  <link rel="stylesheet" href="/hardening.css">
+  <link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main><header class="topbar" id="topbar"></header><div class="page">
+    <div class="offline-warning connection-warning" id="connection-warning" role="status" hidden></div>
+    <section class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">REAL-TIME STREAM</p><h3>Sensor readings</h3></div><label class="room-filter-label">Room<select id="room-filter"><option value="">All rooms</option></select></label></div><div class="chart-wrap"><canvas id="sensor-chart"></canvas></div></section>
+    <section class="panel history-panel"><div class="panel-heading"><div><p class="eyebrow">LATEST DATA</p><h3>Live readings</h3></div></div><div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Room</th><th>Seismic</th><th>Smoke</th><th>Temp</th><th>Gas</th><th>Status</th></tr></thead><tbody id="live-body"></tbody></table></div></section>
+  </div></main>
+  <script src="/vendor/chart.js/chart.umd.js"></script>
+  <script src="/shared.js"></script>
+  <script src="/monitoring.js"></script>
+</body>
+</html>

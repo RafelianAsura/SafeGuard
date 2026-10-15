@@ -3,41 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafeGuard | Smart Building</title>
+  <title>SafeGuard | Dashboard</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/audio.css">
   <link rel="stylesheet" href="/hardening.css">
-  <script src="/vendor/chart.js/chart.umd.js"></script>
+  <link rel="stylesheet" href="/pages.css">
 </head>
 <body>
-  <aside class="sidebar" id="sidebar">
-    <div class="brand"><span class="brand-mark">S</span><span>SafeGuard<small>SMART BUILDING</small></span></div>
-    <nav>
-      <a class="active" href="#dashboard"><span>⌂</span> Dashboard</a>
-      <a href="#monitoring"><span>◉</span> Live Monitoring</a>
-      <a href="#rooms"><span>▦</span> Rooms</a>
-      <a href="#history"><span>◷</span> History</a>
-      <a href="#alerts"><span>!</span> Alerts <b id="alert-count">0</b></a>
-      <a href="#settings"><span>⚙</span> Settings</a>
-    </nav>
-    <div class="sidebar-foot"><span class="online-dot"></span><div><strong>System online</strong><small>ESP32 gateway ready</small></div></div>
-  </aside>
+  <aside class="sidebar" id="sidebar"></aside>
   <main>
-    <header class="topbar"><button class="menu" id="menu">☰</button><div><p class="eyebrow">CONTROL CENTER / <span id="header-date"></span></p><h1>Building overview</h1></div><div class="top-actions"><label class="audio-toggle" title="Alarm berulang terus saat WARNING/DANGER"><input id="audio-enabled" type="checkbox"><span class="audio-switch" aria-hidden="true"></span><span id="audio-label">Sound off</span></label><span class="demo-pill" id="demo-pill" hidden><i></i> Demo mode</span><button class="icon-button" id="refresh" title="Refresh data">↻</button><div class="avatar">SG</div></div></header>
-    <div class="page" id="dashboard">
-      <section class="status-banner" id="status-banner"><div class="status-icon">✓</div><div><p class="eyebrow">OVERALL BUILDING STATUS</p><h2 id="overall-status">NORMAL</h2><p id="status-copy">Semua parameter berada dalam batas aman.</p></div><div class="last-sync">ROOM SHOWN<strong id="sensor-room">--</strong>LAST SYNC<strong id="last-sync">--</strong></div></section>
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="offline-warning connection-warning" id="connection-warning" role="status" hidden></div>
+      <section class="status-banner" id="status-banner">
+        <div class="status-icon">✓</div>
+        <div><p class="eyebrow">OVERALL BUILDING STATUS</p><h2 id="overall-status">--</h2><p id="status-copy">Memuat data...</p></div>
+        <div class="last-sync">ROOM SHOWN<strong id="sensor-room">--</strong>LAST SYNC<strong id="last-sync">--</strong></div>
+      </section>
       <div class="offline-warning" id="offline-warning" role="status" hidden></div>
-      <section class="metrics" id="monitoring">
+      <section class="metrics">
         <article class="metric-card seismic"><div class="card-top"><span class="sensor-icon">⌁</span><span class="sensor-label">SEISMIC</span><span class="live-badge">LIVE</span></div><div class="metric-value"><strong id="vibration-value">--</strong><span>g</span></div><p>MPU6050 vibration</p><div class="meter"><i id="vibration-meter"></i></div><small>Threshold <b id="vibration-threshold">--</b> g</small></article>
         <article class="metric-card smoke"><div class="card-top"><span class="sensor-icon">♨</span><span class="sensor-label">SMOKE & TEMP</span><span class="live-badge">LIVE</span></div><div class="metric-value"><strong id="smoke-value">--</strong><span>ppm/scale</span></div><p>MQ-2 smoke reading</p><div class="meter"><i id="smoke-meter"></i></div><small>Temperature <b id="temperature-value">--</b> °C</small></article>
         <article class="metric-card gas"><div class="card-top"><span class="sensor-icon">◌</span><span class="sensor-label">GAS SENSOR</span><span class="live-badge">LIVE</span></div><div class="metric-value"><strong id="gas-value">--</strong><span>ppm/scale</span></div><p>Gas sensor reading</p><div class="meter"><i id="gas-meter"></i></div><small>Threshold <b id="gas-threshold">--</b> ppm/scale</small></article>
       </section>
-      <section class="grid-two"><article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">REAL-TIME STREAM</p><h3>Sensor readings</h3></div><label class="room-filter-label">Room<select id="room-filter"><option value="">All rooms</option></select></label></div><div class="chart-wrap"><canvas id="sensor-chart"></canvas></div></article><article class="panel" id="alerts"><div class="panel-heading"><div><p class="eyebrow">ATTENTION REQUIRED</p><h3>Recent alerts</h3></div><a href="#history">View all</a></div><div class="alerts-list" id="alerts-list"><div class="empty">Belum ada peringatan.</div></div></article></section>
-      <section class="panel rooms-panel" id="rooms"><div class="panel-heading"><div><p class="eyebrow">ZONE STATUS</p><h3>Rooms overview</h3></div><span class="room-summary" id="room-summary">-- rooms monitored</span></div><div class="rooms-grid" id="rooms-grid"></div></section>
-      <section class="panel history-panel" id="history"><div class="panel-heading"><div><p class="eyebrow">AUDIT TRAIL</p><h3>Sensor history</h3></div><button class="outline-button" id="download">Download CSV</button></div><div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Room</th><th>Seismic</th><th>Smoke</th><th>Temp</th><th>Gas</th><th>Status</th></tr></thead><tbody id="history-body"></tbody></table></div></section>
-      <section class="panel settings-panel" id="settings"><div class="panel-heading"><div><p class="eyebrow">SYSTEM CONFIGURATION</p><h3>Alert thresholds</h3></div><button class="primary-button" id="save-settings">Save settings</button></div><div class="settings-form"><label>Vibration dinamis (g)<input id="setting-vibration" type="number" step="0.01"></label><label>Smoke (ppm/skala)<input id="setting-smoke" type="number"></label><label>Temperature (°C)<input id="setting-temperature" type="number"></label><label>Gas (ppm/skala)<input id="setting-gas" type="number"></label><label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Jika diaktifkan di server"></label></div><p class="form-note" id="settings-note">Ambang getaran 0.15 g hanya nilai awal dan wajib dikalibrasi. Nilai smoke/gas juga bergantung kalibrasi modul.</p></section>
+      <section class="grid-two">
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">ATTENTION REQUIRED</p><h3>Recent alerts</h3></div><a href="/alerts">View all</a></div><div class="alerts-list" id="alerts-list"><div class="empty">Belum ada peringatan.</div></div></article>
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">ZONE STATUS</p><h3>Rooms overview</h3></div><a href="/rooms">View rooms</a></div><span class="room-summary" id="room-summary">-- rooms monitored</span><div class="rooms-grid" id="rooms-summary"></div></article>
+      </section>
     </div>
   </main>
-  <script src="/app.js"></script>
+  <script src="/shared.js"></script>
+  <script src="/dashboard.js"></script>
 </body>
 </html>

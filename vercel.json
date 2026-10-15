@@ -1,6 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "public",
+  "cleanUrls": true,
   "functions": {
     "api/[...path].js": {
       "maxDuration": 30

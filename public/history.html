@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeGuard | History</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/audio.css">
+  <link rel="stylesheet" href="/hardening.css">
+  <link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main><header class="topbar" id="topbar"></header><div class="page">
+    <div class="offline-warning connection-warning" id="connection-warning" role="status" hidden></div>
+    <section class="panel history-panel"><div class="panel-heading"><div><p class="eyebrow">AUDIT TRAIL</p><h3>Sensor history</h3></div><button class="outline-button" id="download">Download CSV</button></div>
+      <form class="history-filters" id="history-filters"><label class="room-filter-label">Room<select id="history-room"><option value="">All rooms</option></select></label><label class="room-filter-label">From<input id="history-from" type="date"></label><label class="room-filter-label">To<input id="history-to" type="date"></label><button class="outline-button" type="submit">Apply filter</button></form><p class="form-note" id="history-note" role="status"></p>
+      <div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Room</th><th>Seismic</th><th>Smoke</th><th>Temp</th><th>Gas</th><th>Status</th></tr></thead><tbody id="history-body"></tbody></table></div>
+    </section>
+  </div></main>
+  <script src="/shared.js"></script>
+  <script src="/history.js"></script>
+</body>
+</html>

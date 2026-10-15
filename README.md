@@ -16,18 +16,21 @@ Buka `http://localhost:3000`. Tanpa `SAFEGUARD_API_KEY`, server tetap berjalan d
 
 ## Deploy ke GitHub dan Vercel
 
+Checklist langkah deploy, perintah pengujian API, dan troubleshooting ada di [DEPLOY.md](DEPLOY.md).
+
 Produksi menggunakan Vercel untuk website/API dan Turso untuk database SQLite yang persisten. File database lokal tidak dikirim ke GitHub atau Turso; database produksi dimulai dengan threshold default dan belum memiliki riwayat sensor.
 
 1. Buat repository kosong di GitHub, lalu jalankan dari folder project:
 
    ```powershell
-   git init
+   git remote add safeguard-github https://github.com/USERNAME/NAMA-REPOSITORY.git
    git add .
+   git status --short
    git commit -m "Prepare SafeGuard for deployment"
-   git branch -M main
-   git remote add origin https://github.com/USERNAME/NAMA-REPOSITORY.git
-   git push -u origin main
+   git push -u safeguard-github HEAD:main
    ```
+
+   Workspace ini sudah mempunyai Git history dan remote `origin`; perintah di atas menambahkan remote baru tanpa mengganti remote tersebut. Ganti placeholder URL dengan repository baru. Periksa `git status --short` agar tidak ada database atau credential yang akan dikirim.
 
 2. Buat database Turso dan ambil URL serta tokennya. Dengan Turso CLI yang sudah login:
 
@@ -41,15 +44,17 @@ Produksi menggunakan Vercel untuk website/API dan Turso untuk database SQLite ya
 
 3. Di Vercel, pilih **Add New → Project**, import repository GitHub tersebut, dan deploy. Konfigurasi project sudah menggunakan build `npm run build` dan folder output `public`.
 
-4. Sebelum deployment pertama (atau segera setelah import), tambahkan Environment Variables berikut di **Project → Settings → Environment Variables**. Terapkan ke **Production**, dan tambahkan ke Preview jika diperlukan:
+4. Sebelum deployment pertama, tambahkan `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, dan `SAFEGUARD_API_KEY` pada **Project → Settings → Environment Variables**. Terapkan ke Production dan Preview sesuai kebutuhan.
 
-   - `TURSO_DATABASE_URL` - URL database Turso, biasanya diawali `libsql://`.
-   - `TURSO_AUTH_TOKEN` - token rahasia database Turso.
-   - `SAFEGUARD_API_KEY` - key acak panjang untuk melindungi endpoint tulis. Buat dengan `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+   Buat API key acak dengan:
 
-   Semua variabel tersebut hanya untuk server; jangan beri awalan `NEXT_PUBLIC_` atau `VITE_`. Setelah menyimpannya, lakukan **Redeploy**. API key yang sama harus dipasang pada ESP32/simulator sebagai header `x-api-key`; masukkan ke field API key di dashboard untuk menyimpan threshold.
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
 
-5. Buka URL Vercel untuk mengecek dashboard. Endpoint ESP32 produksi adalah `https://NAMA-PROJECT.vercel.app/api/readings`. Data baru akan tersimpan di Turso, tidak di file lokal.
+   Variabel tersebut hanya untuk server; jangan beri awalan `NEXT_PUBLIC_` atau `VITE_`. Redeploy setelah mengubahnya. API key yang sama harus dipasang pada ESP32/simulator sebagai header `x-api-key`; masukkan ke field API key di dashboard untuk menyimpan threshold.
+
+5. Buka URL Vercel untuk mengecek dashboard. Endpoint ESP32 produksi adalah `https://NAMA-PROJECT.vercel.app/api/readings`. Data baru tersimpan di Turso, bukan di file lokal.
 
 ## Demo
 
@@ -63,7 +68,7 @@ if ($env:SAFEGUARD_API_KEY) { $headers['x-api-key'] = $env:SAFEGUARD_API_KEY }
 Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/demo/seed -Headers $headers
 ```
 
-Untuk simulasi berulang tanpa hardware, jalankan salah satu skenario di terminal lain:
+Untuk simulasi berulang tanpa hardware:
 
 ```powershell
 node scripts/simulate.js normal
@@ -72,18 +77,16 @@ node scripts/simulate.js two-breach
 node scripts/simulate.js offline
 ```
 
-`normal`, `one-breach`, dan `two-breach` mengirim terus setiap 5 detik; tekan `Ctrl+C` untuk berhenti. Tiga pembacaan berturut-turut dibutuhkan untuk mengubah status. `offline` mengirim satu pembacaan lalu keluar; ruangan menjadi OFFLINE setelah timeout. Simulator memakai threshold aktif server dan mengirim `source: demo` melalui header, tanpa membuat api atau melepas gas sungguhan. Badge Demo Mode tampil jika semua ruangan yang sedang online memakai data demo.
+`normal`, `one-breach`, dan `two-breach` mengirim terus setiap 5 detik; tekan `Ctrl+C` untuk berhenti. Tiga pembacaan berturut-turut dibutuhkan untuk mengubah status. `offline` mengirim satu pembacaan lalu keluar; ruangan menjadi OFFLINE setelah timeout. Simulator memakai threshold aktif server dan menandai data demo melalui header, tanpa membuat api atau melepas gas sungguhan. Badge Demo Mode tampil jika semua ruangan online memakai data demo.
 
 Konfigurasi simulator: `SAFEGUARD_API_URL` (default `http://localhost:3000/api/readings`), `SAFEGUARD_API_KEY` (jika server memakai key), `SIMULATOR_ROOM` (default `Ruang Demo`), `SIMULATOR_INTERVAL_MS` (default `5000`), dan `SIMULATOR_MAX_READINGS` (default `0` = terus sampai Ctrl+C). Contoh demo terbatas: `$env:SIMULATOR_MAX_READINGS = "3"; node scripts/simulate.js two-breach`.
 
 ## API ESP32
 
-ESP32 tetap menggunakan kontrak payload yang sama:
-
 ```http
 POST /api/readings
 Content-Type: application/json
-x-api-key: <SAFEGUARD_API_KEY>   # hanya jika key diaktifkan
+x-api-key: <SAFEGUARD_API_KEY>
 ```
 
 ```json
@@ -101,10 +104,10 @@ Field `timestamp` opsional; jika tidak dikirim, server memberi timestamp penerim
 
 Endpoint penting:
 
-- `GET /api/health` - health check
-- `GET /api/dashboard` - status terburuk per room, status OFFLINE, settings, dan alerts
-- `GET /api/readings?limit=60&room=Ruang%20Server` - riwayat, filter room opsional
-- `GET /api/alerts?limit=100` - log peringatan
+- `GET /api/health` - health check database
+- `GET /api/dashboard` - status terburuk per room, status OFFLINE, settings, alert terbaru dan total alert
+- `GET /api/readings?limit=60&room=Ruang%20Server&from=2026-10-01&to=2026-10-15` - riwayat, filter room/tanggal opsional
+- `GET /api/alerts?limit=100&offset=0` - log peringatan, pagination offset opsional
 - `GET /api/settings` - threshold aktif
 - `PUT /api/settings` - ubah threshold (API key jika disetel; nilai finite > 0)
 - `POST /api/readings` - ingest ESP32 (API key jika disetel)
@@ -121,27 +124,37 @@ Jika `SAFEGUARD_API_KEY` diatur, masukkan key tersebut pada field API key di Set
 - Ambang awal: getaran dinamis `0.15 g` (wajib kalibrasi), smoke `320`, suhu `45 C`, gas `420`. Database lama yang masih memakai default getaran `1.2 g` dimigrasikan sekali ke `0.15 g`; nilai konfigurasi lain dipertahankan.
 - Data readings dan alerts yang lebih lama dari 7 hari dibersihkan saat startup dan kira-kira setiap 6 jam (env `SAFEGUARD_RETENTION_DAYS`). Vercel menjalankan pembersihan saat startup dan pada request API pertama setelah interval tersebut.
 - Dashboard refresh otomatis tiap 10 detik. Riwayat menampilkan status yang disimpan saat reading masuk, bukan menghitung ulang dengan threshold saat ini.
-- SQLite disimpan di `safeguard.db`. File `safeguard.db`, `safeguard.db-shm`, dan `safeguard.db-wal` dikecualikan `.gitignore`; jangan masukkan file database lokal ke ZIP/repo.
+- SQLite lokal disimpan di `safeguard.db`. File `safeguard.db`, `safeguard.db-shm`, dan `safeguard.db-wal` dikecualikan `.gitignore`; jangan masukkan file database lokal ke ZIP/repo.
 
 ## Hardware
 
-Laptop/server dan ESP32 harus satu jaringan Wi-Fi. ESP32 mengirim ke `http://IP_LAPTOP:3000/api/readings`, bukan `localhost`. Wiring, pembagi tegangan, rumus MPU6050, kalibrasi, dan contoh firmware ada di [HARDWARE_HANDOFF.md](HARDWARE_HANDOFF.md).
+Laptop/server dan ESP32 harus satu jaringan Wi-Fi. ESP32 lokal mengirim ke `http://IP_LAPTOP:3000/api/readings`, bukan `localhost`. Wiring, pembagi tegangan, rumus MPU6050, kalibrasi, dan contoh firmware ada di [HARDWARE_HANDOFF.md](HARDWARE_HANDOFF.md).
+
+## Halaman Dashboard
+
+- `/` - overview, sensor summary, alert terbaru, dan ringkasan room
+- `/live-monitoring` - grafik dan pembacaan terbaru dengan filter room
+- `/rooms` - status semua room
+- `/history` - riwayat dengan filter room/tanggal dan export CSV
+- `/alerts` - semua alert (halaman memuat bertahap, 500 per request)
+- `/settings` - threshold dan API key
 
 ## Struktur
 
 ```text
 SafeGuard/
-  public/                 # frontend statis dan CSS
+  public/                 # enam halaman HTML, CSS dan shared/page JS
   api/[...path].js        # Vercel serverless API entry
   scripts/build.js        # siapkan Chart.js untuk static deployment
   scripts/simulate.js     # skenario demo via POST
+  firmware/               # Arduino ESP32 sample and setup guide
   server.js               # Express + libSQL/SQLite + REST API
   package.json
   package-lock.json
   README.md
   mdfiles/DEMO_GUIDE.md
+  DEPLOY.md
   HARDWARE_HANDOFF.md
 ```
 #   S a f e G u a r d  
- #   S a f e G u a r d  
  

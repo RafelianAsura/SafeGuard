@@ -1,0 +1,30 @@
+#pragma once
+
+#define WIFI_SSID "replace-with-wifi-name"
+#define WIFI_PASSWORD "replace-with-wifi-password"
+
+// Include the endpoint path: /api/readings
+#define SERVER_URL "https://your-project.vercel.app/api/readings"
+#define API_KEY "replace-with-SAFEGUARD_API_KEY"
+#define ROOM_NAME "Ruang Server"
+
+// Assumption: DS18B20 is the documented temperature sensor.
+// Set to SG_TEMP_SENSOR_DHT22 to use a DHT22 instead.
+#define SG_TEMP_SENSOR_DS18B20 1
+#define SG_TEMP_SENSOR_DHT22 2
+#define TEMP_SENSOR_TYPE SG_TEMP_SENSOR_DS18B20
+
+#define I2C_SDA_PIN 21
+#define I2C_SCL_PIN 22
+#define MQ2_ANALOG_PIN 34
+#define GAS_ANALOG_PIN 35
+#define DS18B20_DATA_PIN 4
+#define DHT22_DATA_PIN 4
+
+#define SEND_INTERVAL_MS 5000
+#define MPU_SAMPLE_INTERVAL_MS 20
+#define REQUEST_TIMEOUT_MS 5000
+#define WIFI_RETRY_INTERVAL_MS 10000
+
+// For HTTPS, paste a trusted root CA certificate here. HTTP local URLs do not use it.
+static const char SERVER_ROOT_CA[] = "";
