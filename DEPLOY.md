@@ -28,10 +28,10 @@
 Install and authenticate the Turso CLI, then run:
 
 ```powershell
-turso auth login
-turso db create safeguard-production
-turso db show --url safeguard-production
-turso db tokens create safeguard-production
+   turso auth login
+   turso db create safeguard-production
+   turso db show --url safeguard-production
+   turso db tokens create safeguard-production
 ```
 
 Copy the URL from `turso db show --url` as `TURSO_DATABASE_URL` and the token output as `TURSO_AUTH_TOKEN`. Keep the token private. Alternatively, create a database in the Turso dashboard, then copy its database URL and create a database auth token in its settings.

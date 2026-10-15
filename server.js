@@ -234,14 +234,20 @@ async function addReading(payload, createAlerts = true, source = 'esp32') {
       candidate_status: candidateStatus,
       candidate_count: candidateCount
     });
-    const result = await transaction.execute(`INSERT INTO readings (room, vibration, smoke, temperature, gas, timestamp, received_at, source, status, breaches, candidate_status, candidate_count)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-      reading.room, reading.vibration, reading.smoke, reading.temperature, reading.gas,
-      reading.timestamp, reading.received_at, reading.source, reading.status, reading.breaches,
-      reading.candidate_status, reading.candidate_count
-    ]);
-    await transaction.execute(`INSERT INTO room_state (room, last_received_at) VALUES (?, ?)
-      ON CONFLICT(room) DO UPDATE SET last_received_at = excluded.last_received_at`, [reading.room, reading.received_at]);
+    const result = await transaction.execute({
+      sql: `INSERT INTO readings (room, vibration, smoke, temperature, gas, timestamp, received_at, source, status, breaches, candidate_status, candidate_count)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        reading.room, reading.vibration, reading.smoke, reading.temperature, reading.gas,
+        reading.timestamp, reading.received_at, reading.source, reading.status, reading.breaches,
+        reading.candidate_status, reading.candidate_count
+      ]
+    });
+    await transaction.execute({
+      sql: `INSERT INTO room_state (room, last_received_at) VALUES (?, ?)
+        ON CONFLICT(room) DO UPDATE SET last_received_at = excluded.last_received_at`,
+      args: [reading.room, reading.received_at]
+    });
     if (createAlerts && status === candidate && status !== 'NORMAL' && breaches.length) {
       const severity = status === 'DANGER' ? 'danger' : 'warning';
       const now = Date.now();
@@ -252,8 +258,11 @@ async function addReading(payload, createAlerts = true, source = 'esp32') {
         }));
         const previousAlert = alertRows[0];
         if (!previousAlert || now - Number(previousAlert.created_at) >= ALERT_COOLDOWN_SECONDS * 1000) {
-          await transaction.execute(`INSERT INTO alerts (type, severity, message, room, timestamp, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)`, [type, severity, message, reading.room, reading.timestamp, now]);
+          await transaction.execute({
+            sql: `INSERT INTO alerts (type, severity, message, room, timestamp, created_at)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [type, severity, message, reading.room, reading.timestamp, now]
+          });
         }
       }
     }
