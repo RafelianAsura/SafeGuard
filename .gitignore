@@ -6,3 +6,6 @@ node_modules/
 safeguard.db*
 public/vendor/chart.js/
 firmware/safeguard_esp32/config.h
+.vercel
+.env*
+!.env.example
