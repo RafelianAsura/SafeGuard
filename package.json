@@ -1,0 +1,19 @@
+{
+  "name": "safeguard-smart-building",
+  "version": "1.0.0",
+  "description": "SafeGuard Smart Building Hazard Monitoring System",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "node scripts/build.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "chart.js": "^4.4.7",
+    "express": "^4.21.2"
+  }
+}
